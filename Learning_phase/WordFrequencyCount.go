@@ -61,3 +61,4 @@ func main() {
 		fmt.Printf("Is %q a palindrome? %v\n", test, isPalindrome(test))
 	}
 }
+
