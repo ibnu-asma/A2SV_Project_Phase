@@ -5,12 +5,13 @@ import (
 	"task_manager/data"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter() *gin.Engine {
+func SetupRouter(client *mongo.Client) *gin.Engine {
 	r := gin.Default()
 
-	service := data.NewTaskService()
+	service := data.NewTaskService(client, "taskdb", "tasks")
 	taskController := controllers.NewTaskController(service)
 
 	r.GET("/tasks", taskController.GetTasks)

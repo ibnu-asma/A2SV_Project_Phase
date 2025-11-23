@@ -5,6 +5,10 @@
 *.so
 *.dylib
 task_manager
+task_manager_mongodb
+
+# Environment files
+.env
 
 # Test binary
 *.test
