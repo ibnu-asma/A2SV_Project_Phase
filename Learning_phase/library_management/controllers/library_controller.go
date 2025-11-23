@@ -43,6 +43,8 @@ func (c *LibraryController) Start() {
 			c.listBorrowedBooks()
 		case 7:
 			c.addMember()
+		case 8:
+			c.reserveBook()
 		case 0:
 			fmt.Println("Goodbye!")
 			return
@@ -61,6 +63,7 @@ func (c *LibraryController) showMenu() {
 	fmt.Println("5. List Available Books")
 	fmt.Println("6. List Borrowed Books")
 	fmt.Println("7. Add Member")
+	fmt.Println("8. Reserve Book")
 	fmt.Println("0. Exit")
 }
 
@@ -92,7 +95,7 @@ func (c *LibraryController) addBook() {
 		ID:     id,
 		Title:  title,
 		Author: author,
-		Status: "Available",
+		Status: models.StatusAvailable,
 	}
 	c.service.AddBook(book)
 	fmt.Println("Book added successfully!")
@@ -166,4 +169,17 @@ func (c *LibraryController) addMember() {
 		lib.AddMember(member)
 		fmt.Println("Member added successfully!")
 	}
+}
+
+
+func (c *LibraryController) reserveBook() {
+    bookID := c.readInt("Enter Book ID to reserve")
+    memberID := c.readInt("Enter Member ID")
+
+    err := c.service.ReserveBook(bookID, memberID)
+    if err != nil {
+        fmt.Printf("Reserve failed: %v\n", err)
+    } else {
+        fmt.Println("Book reserved! Borrow within 5 seconds.")
+    }
 }
