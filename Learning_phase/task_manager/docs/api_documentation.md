@@ -1,37 +1,103 @@
-# Task Management API Documentation
+# Task Management API with JWT Authentication
 
 ## Base URL
 ```
 http://localhost:8080
 ```
 
-## MongoDB Configuration
+## Authentication
 
-### Prerequisites
-- MongoDB installed locally or access to MongoDB Atlas
-- Default connection: `mongodb://localhost:27017`
-- Database: `taskdb`
-- Collection: `tasks`
+This API uses JWT (JSON Web Tokens) for authentication. Protected endpoints require a valid JWT token in the Authorization header.
 
-### Environment Setup
-1. Install MongoDB locally or use MongoDB Atlas
-2. Start MongoDB service: `mongod` (for local installation)
-3. Update connection string in `main.go` if using custom configuration
+### Token Format
+```
+Authorization: Bearer <your_jwt_token>
+```
 
 ---
 
-## Endpoints
+## User Roles
 
-### 1. Get All Tasks
+- **Admin**: Can create, update, delete tasks, and promote users
+- **User**: Can view all tasks and individual task details
+
+### First User Rule
+The first registered user automatically becomes an admin.
+
+---
+
+## Public Endpoints (No Authentication Required)
+
+### 1. Register User
+**Endpoint:** `POST /register`
+
+**Description:** Create a new user account. First user becomes admin automatically.
+
+**Request Body:**
+```json
+{
+  "username": "john_doe",
+  "password": "securePassword123"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "507f1f77bcf86cd799439011",
+  "username": "john_doe",
+  "role": "admin"
+}
+```
+
+**Error Responses:**
+- **400 Bad Request:** Username already exists or validation error
+
+---
+
+### 2. Login
+**Endpoint:** `POST /login`
+
+**Description:** Authenticate user and receive JWT token.
+
+**Request Body:**
+```json
+{
+  "username": "john_doe",
+  "password": "securePassword123"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "507f1f77bcf86cd799439011",
+    "username": "john_doe",
+    "role": "admin"
+  }
+}
+```
+
+**Error Responses:**
+- **401 Unauthorized:** Invalid credentials
+
+---
+
+## Protected Endpoints (Authentication Required)
+
+### 3. Get All Tasks
 **Endpoint:** `GET /tasks`
 
-**Description:** Retrieves a list of all tasks from MongoDB.
+**Description:** Retrieve all tasks (accessible by all authenticated users).
 
-**Request:** No body required
+**Headers:**
+```
+Authorization: Bearer <your_jwt_token>
+```
 
-**Response:**
-- **Status Code:** 200 OK
-- **Body:**
+**Response (200 OK):**
 ```json
 {
   "tasks": [
@@ -46,32 +112,22 @@ http://localhost:8080
 }
 ```
 
-**Error Response:**
-- **Status Code:** 500 Internal Server Error
-- **Body:**
-```json
-{
-  "error": "database error message"
-}
-```
+**Error Responses:**
+- **401 Unauthorized:** Missing or invalid token
 
 ---
 
-### 2. Get Task by ID
+### 4. Get Task by ID
 **Endpoint:** `GET /tasks/:id`
 
-**Description:** Retrieves details of a specific task by MongoDB ObjectID.
+**Description:** Retrieve specific task details (accessible by all authenticated users).
 
-**Request:** No body required
+**Headers:**
+```
+Authorization: Bearer <your_jwt_token>
+```
 
-**URL Parameters:**
-- `id` (string): MongoDB ObjectID (24-character hex string)
-
-**Example:** `GET /tasks/507f1f77bcf86cd799439011`
-
-**Response:**
-- **Status Code:** 200 OK
-- **Body:**
+**Response (200 OK):**
 ```json
 {
   "id": "507f1f77bcf86cd799439011",
@@ -83,102 +139,75 @@ http://localhost:8080
 ```
 
 **Error Responses:**
-- **Status Code:** 400 Bad Request (Invalid ID format)
-```json
-{
-  "error": "invalid task ID"
-}
-```
-- **Status Code:** 404 Not Found
-```json
-{
-  "error": "Task not found"
-}
-```
+- **401 Unauthorized:** Missing or invalid token
+- **404 Not Found:** Task not found
 
 ---
 
-### 3. Create Task
+## Admin-Only Endpoints
+
+### 5. Create Task
 **Endpoint:** `POST /tasks`
 
-**Description:** Creates a new task in MongoDB.
+**Description:** Create a new task (admin only).
+
+**Headers:**
+```
+Authorization: Bearer <admin_jwt_token>
+```
 
 **Request Body:**
 ```json
 {
-  "title": "Complete project",
-  "description": "Finish the task management API",
+  "title": "New Task",
+  "description": "Task description",
   "due_date": "2024-12-31T23:59:59Z",
-  "status": "In Progress"
+  "status": "Pending"
 }
 ```
 
-**Required Fields:**
-- `title` (string): Task title
-- `description` (string): Task description
-- `due_date` (string): Due date in ISO 8601 format
-- `status` (string): Task status (e.g., "Pending", "In Progress", "Completed")
-
-**Response:**
-- **Status Code:** 201 Created
-- **Body:**
+**Response (201 Created):**
 ```json
 {
   "id": "507f1f77bcf86cd799439011",
-  "title": "Complete project",
-  "description": "Finish the task management API",
+  "title": "New Task",
+  "description": "Task description",
   "due_date": "2024-12-31T23:59:59Z",
-  "status": "In Progress"
+  "status": "Pending"
 }
 ```
 
 **Error Responses:**
-- **Status Code:** 400 Bad Request
-```json
-{
-  "error": "validation error message"
-}
-```
-- **Status Code:** 500 Internal Server Error
-```json
-{
-  "error": "database error message"
-}
-```
+- **401 Unauthorized:** Missing or invalid token
+- **403 Forbidden:** User is not an admin
 
 ---
 
-### 4. Update Task
+### 6. Update Task
 **Endpoint:** `PUT /tasks/:id`
 
-**Description:** Updates an existing task in MongoDB.
+**Description:** Update an existing task (admin only).
 
-**URL Parameters:**
-- `id` (string): MongoDB ObjectID
+**Headers:**
+```
+Authorization: Bearer <admin_jwt_token>
+```
 
 **Request Body:**
 ```json
 {
-  "title": "Updated title",
+  "title": "Updated Task",
   "description": "Updated description",
   "due_date": "2024-12-31T23:59:59Z",
   "status": "Completed"
 }
 ```
 
-**Required Fields:**
-- `title` (string): Task title
-- `description` (string): Task description
-- `due_date` (string): Due date in ISO 8601 format
-- `status` (string): Task status
-
-**Response:**
-- **Status Code:** 200 OK
-- **Body:**
+**Response (200 OK):**
 ```json
 {
   "id": "507f1f77bcf86cd799439011",
-  "title": "Updated title",
+  "title": "Updated Task",
   "description": "Updated description",
   "due_date": "2024-12-31T23:59:59Z",
   "status": "Completed"
@@ -186,40 +215,23 @@ http://localhost:8080
 ```
 
 **Error Responses:**
-- **Status Code:** 400 Bad Request
-```json
-{
-  "error": "validation error message"
-}
-```
-- **Status Code:** 404 Not Found
-```json
-{
-  "error": "Task not found"
-}
-```
-- **Status Code:** 500 Internal Server Error
-```json
-{
-  "error": "database error message"
-}
-```
+- **401 Unauthorized:** Missing or invalid token
+- **403 Forbidden:** User is not an admin
+- **404 Not Found:** Task not found
 
 ---
 
-### 5. Delete Task
+### 7. Delete Task
 **Endpoint:** `DELETE /tasks/:id`
 
-**Description:** Deletes a specific task from MongoDB.
+**Description:** Delete a task (admin only).
 
-**URL Parameters:**
-- `id` (string): MongoDB ObjectID
+**Headers:**
+```
+Authorization: Bearer <admin_jwt_token>
+```
 
-**Request:** No body required
-
-**Response:**
-- **Status Code:** 200 OK
-- **Body:**
+**Response (200 OK):**
 ```json
 {
   "message": "Task deleted successfully"
@@ -227,24 +239,38 @@ http://localhost:8080
 ```
 
 **Error Responses:**
-- **Status Code:** 400 Bad Request
+- **401 Unauthorized:** Missing or invalid token
+- **403 Forbidden:** User is not an admin
+- **404 Not Found:** Task not found
+
+---
+
+### 8. Promote User to Admin
+**Endpoint:** `PUT /promote/:username`
+
+**Description:** Promote a user to admin role (admin only).
+
+**Headers:**
+```
+Authorization: Bearer <admin_jwt_token>
+```
+
+**URL Parameters:**
+- `username`: Username of the user to promote
+
+**Example:** `PUT /promote/jane_doe`
+
+**Response (200 OK):**
 ```json
 {
-  "error": "invalid task ID"
+  "message": "User promoted to admin successfully"
 }
 ```
-- **Status Code:** 404 Not Found
-```json
-{
-  "error": "Task not found"
-}
-```
-- **Status Code:** 500 Internal Server Error
-```json
-{
-  "error": "database error message"
-}
-```
+
+**Error Responses:**
+- **401 Unauthorized:** Missing or invalid token
+- **403 Forbidden:** User is not an admin
+- **404 Not Found:** User not found
 
 ---
 
@@ -254,153 +280,210 @@ http://localhost:8080
 |-------------|-------------|
 | 200 OK | Request successful |
 | 201 Created | Resource created successfully |
-| 400 Bad Request | Invalid request payload or ID format |
+| 400 Bad Request | Invalid request payload |
+| 401 Unauthorized | Missing or invalid authentication token |
+| 403 Forbidden | Insufficient permissions |
 | 404 Not Found | Resource not found |
-| 500 Internal Server Error | Database or server error |
+| 500 Internal Server Error | Server error |
 
 ---
 
-## MongoDB Integration Details
+## Security Features
 
-### Connection Configuration
-- **Default URI:** `mongodb://localhost:27017`
-- **Database Name:** `taskdb`
-- **Collection Name:** `tasks`
+### Password Hashing
+- Passwords are hashed using bcrypt with default cost (10)
+- Plain text passwords are never stored in the database
 
-### Data Persistence
-- All tasks are stored in MongoDB with persistent storage
-- Task IDs are MongoDB ObjectIDs (24-character hex strings)
-- Data survives application restarts
+### JWT Token
+- Tokens expire after 24 hours
+- Tokens contain user ID, username, and role
+- Signed with HS256 algorithm
 
-### MongoDB Operations
-- **Create:** `InsertOne` operation
-- **Read:** `Find` and `FindOne` operations
-- **Update:** `UpdateOne` operation with `$set`
-- **Delete:** `DeleteOne` operation
+### Authorization
+- Middleware validates JWT tokens on protected routes
+- Admin middleware checks user role for admin-only endpoints
 
 ---
 
 ## Testing with Postman
 
-### Setup
-1. Ensure MongoDB is running
-2. Start the application: `go run main.go`
-3. Import endpoints into Postman
-4. Set base URL: `http://localhost:8080`
-
-### Test Scenarios
-
-#### 1. Create a Task
-- Method: POST
-- URL: `http://localhost:8080/tasks`
-- Headers: `Content-Type: application/json`
-- Body (raw JSON):
-```json
+### Step 1: Register First User (Admin)
+```
+POST http://localhost:8080/register
+Body (JSON):
 {
-  "title": "Learn Go",
-  "description": "Complete Go tutorial",
+  "username": "admin",
+  "password": "admin123"
+}
+```
+**Note:** First user becomes admin automatically.
+
+### Step 2: Login
+```
+POST http://localhost:8080/login
+Body (JSON):
+{
+  "username": "admin",
+  "password": "admin123"
+}
+```
+**Copy the token from response.**
+
+### Step 3: Create Task (Admin)
+```
+POST http://localhost:8080/tasks
+Headers:
+  Authorization: Bearer <your_token>
+Body (JSON):
+{
+  "title": "Test Task",
+  "description": "Testing authentication",
   "due_date": "2024-12-31T23:59:59Z",
   "status": "Pending"
 }
 ```
 
-#### 2. Get All Tasks
-- Method: GET
-- URL: `http://localhost:8080/tasks`
-
-#### 3. Get Task by ID
-- Method: GET
-- URL: `http://localhost:8080/tasks/507f1f77bcf86cd799439011`
-- Note: Replace with actual ObjectID from created task
-
-#### 4. Update Task
-- Method: PUT
-- URL: `http://localhost:8080/tasks/507f1f77bcf86cd799439011`
-- Headers: `Content-Type: application/json`
-- Body (raw JSON):
-```json
-{
-  "title": "Learn Go - Updated",
-  "description": "Complete advanced Go tutorial",
-  "due_date": "2024-12-31T23:59:59Z",
-  "status": "In Progress"
-}
+### Step 4: Get All Tasks (Any User)
+```
+GET http://localhost:8080/tasks
+Headers:
+  Authorization: Bearer <your_token>
 ```
 
-#### 5. Delete Task
-- Method: DELETE
-- URL: `http://localhost:8080/tasks/507f1f77bcf86cd799439011`
+### Step 5: Register Regular User
+```
+POST http://localhost:8080/register
+Body (JSON):
+{
+  "username": "user1",
+  "password": "user123"
+}
+```
+**Note:** This user will have "user" role.
+
+### Step 6: Promote User (Admin Only)
+```
+PUT http://localhost:8080/promote/user1
+Headers:
+  Authorization: Bearer <admin_token>
+```
 
 ---
 
-## Verifying Data in MongoDB
+## Testing Scenarios
 
-### Using MongoDB Shell
-```bash
-mongosh
-use taskdb
-db.tasks.find().pretty()
+### Scenario 1: Unauthorized Access
+Try accessing protected endpoint without token:
+```
+GET http://localhost:8080/tasks
+(No Authorization header)
+```
+**Expected:** 401 Unauthorized
+
+### Scenario 2: Regular User Creating Task
+Login as regular user and try to create task:
+```
+POST http://localhost:8080/tasks
+Headers:
+  Authorization: Bearer <user_token>
+```
+**Expected:** 403 Forbidden
+
+### Scenario 3: Token Expiration
+Use a token after 24 hours:
+**Expected:** 401 Unauthorized
+
+---
+
+## MongoDB Collections
+
+### Users Collection
+```json
+{
+  "_id": ObjectId,
+  "username": "string",
+  "password": "hashed_password",
+  "role": "admin|user"
+}
 ```
 
-### Using MongoDB Compass
-1. Connect to `mongodb://localhost:27017`
-2. Navigate to `taskdb` database
-3. Open `tasks` collection
-4. View and verify stored documents
+### Tasks Collection
+```json
+{
+  "_id": ObjectId,
+  "title": "string",
+  "description": "string",
+  "due_date": ISODate,
+  "status": "string"
+}
+```
+
+---
+
+## Environment Configuration
+
+### JWT Secret
+Update in `middleware/auth_middleware.go`:
+```go
+var jwtSecret = []byte("your-secret-key-change-in-production")
+```
+
+**Important:** Change this in production!
 
 ---
 
 ## Running the Application
 
-1. Install MongoDB:
-   - **Local:** Download from [mongodb.com](https://www.mongodb.com/try/download/community)
-   - **Cloud:** Use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-
-2. Start MongoDB service:
+1. Start MongoDB:
 ```bash
 mongod
 ```
 
-3. Install dependencies:
-```bash
-go mod tidy
-```
-
-4. Run the application:
+2. Run the application:
 ```bash
 go run main.go
 ```
 
-5. The server will start on `http://localhost:8080`
+3. Server starts on: `http://localhost:8080`
 
 ---
 
-## Configuration Options
+## Common Errors
 
-### Custom MongoDB URI
-Update `main.go`:
-```go
-mongoURI := "mongodb://username:password@host:port"
-```
+### "Authorization header required"
+- Add `Authorization: Bearer <token>` header
 
-### MongoDB Atlas Connection
-```go
-mongoURI := "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority"
-```
+### "Invalid token format"
+- Ensure format is: `Bearer <token>` (with space)
 
-### Custom Database/Collection Names
-Update `router/router.go`:
-```go
-service := data.NewTaskService(client, "your_db_name", "your_collection_name")
-```
+### "Admin access required"
+- Endpoint requires admin role
+- Login with admin account or get promoted
+
+### "username already exists"
+- Choose a different username
+
+### "invalid credentials"
+- Check username and password
+
+---
+
+## Best Practices
+
+1. **Store tokens securely** on client side
+2. **Never share** JWT secret key
+3. **Use HTTPS** in production
+4. **Implement token refresh** for better UX
+5. **Log out** by deleting token on client side
+6. **Change default JWT secret** before deployment
 
 ---
 
 ## Notes
 
-- Task IDs are MongoDB ObjectIDs (24-character hex strings)
-- All dates must be in ISO 8601 format
-- Data persists across application restarts
-- Connection timeout is set to 10 seconds
-- All endpoints return JSON responses
-- Backward compatible with previous API version (same endpoint structure)
+- Passwords are hashed with bcrypt (cost 10)
+- JWT tokens expire in 24 hours
+- First registered user is automatically admin
+- Admin can promote any user to admin
+- Regular users can only view tasks
+- Admins can perform all CRUD operations
