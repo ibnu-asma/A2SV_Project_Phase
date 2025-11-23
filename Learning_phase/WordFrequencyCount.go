@@ -35,30 +35,43 @@ func isPalindrome(s string) bool {
 	return s == reversed
 }
 
+
+// Go goroutines example
+func goRoutineExampe() {
+	var count = 5
+	go  func() { count++ }()
+	go func ()  { count++ }()
+	fmt.Println(count)
+	} 
+
+
+
 func main() {
 
 	// Task 1 test
-	tests := []string {
-		"Hello world hello",
-		"Go is great. Go is fun!",
-		"Test test TEST",
-	}
-	for _, test := range tests {
-		fmt.Printf("Input: %q\n", test)
-		fmt.Printf("Output: %v\n\n", WordFrequencyCount(test))
-	}
+	// tests := []string {
+	// 	"Hello world hello",
+	// 	"Go is great. Go is fun!",
+	// 	"Test test TEST",
+	// }
+	// for _, test := range tests {
+	// 	fmt.Printf("Input: %q\n", test)
+	// 	fmt.Printf("Output: %v\n\n", WordFrequencyCount(test))
+	// }
 
 
 	// Task 2 test
-	palindromeTests := []string {
-		"Racecar",
-		"hello",
-		"Madam",
-		"Step on no pets",
-	}
+	// palindromeTests := []string {
+	// 	"Racecar",
+	// 	"hello",
+	// 	"Madam",
+	// 	"Step on no pets",
+	// }
 
-	for _, test := range palindromeTests {
-		fmt.Printf("Is %q a palindrome? %v\n", test, isPalindrome(test))
-	}
+	// for _, test := range palindromeTests {
+	// 	fmt.Printf("Is %q a palindrome? %v\n", test, isPalindrome(test))
+	// }
+
+	goRoutineExampe()
 }
 
